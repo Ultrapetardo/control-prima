@@ -2,11 +2,10 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Control de Primas</title>
+  <title>Control de Primas y Gastos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="icon" href="Iconica-Pastel-Png.128.png">
 </head>
 <body>
   <header>
@@ -16,56 +15,19 @@
       <select id="month-select"></select>
       <button id="save-month">Guardar Mes</button>
     </div>
-    <nav>
-      <button id="tab-actual" class="tab active">Mes Actual</button>
-      <button id="tab-historial" class="tab">Historial</button>
-    </nav>
   </header>
 
-  <main id="tab-content-actual" class="visible">
-    <section class="card">
-      <h2>Ingreso base mensual</h2>
-      <input id="base-income-input" type="number" min="0" placeholder="Ingreso base COP" />
-      <button id="save-base-income">Guardar</button>
-      <span id="base-income-display"></span>
-    </section>
-
+  <main>
     <section class="card">
       <h2>Primas del mes</h2>
-      <ul id="bonus-list"></ul>
       <button id="add-bonus">Agregar Prima</button>
-      <span id="bonus-total"></span>
+      <ul id="bonus-list"></ul>
+      <p>Total primas: <span id="bonus-total"></span></p>
     </section>
 
     <section class="card">
-      <h2>Resumen del mes</h2>
-      <p>Total primas: <span id="summary-bonus"></span></p>
-      <p>Ingreso total (base + primas): <span id="summary-total"></span></p>
-    </section>
-
-    <section class="card">
-      <h2>Resumen Gráfico</h2>
-      nvas id="summaryChart" width="360"" height="360"></canvas>
-    </section>
-  </main>
-
-  <main id="tab-content-historial" class="hidden">
-    <section class="card">
-      <h2>Historial de Primas</h2>
-      <div style="overflow-x:auto;">
-        <table id="history-table">
-          <thead>
-            <tr>
-              <th>Mes</th>
-              <th>Ingreso base</th>
-              <th>Total primas</th>
-              <th>Ingreso total</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <button id="download-csv">Descargar Historial CSV</button>
+      <h2>Resumen gráfico del mes</h2>
+      <vas id="summaryChart" width="360" height=""360"></canvas>
     </section>
   </main>
 
@@ -75,19 +37,19 @@
       <h3>Prima</h3>
       <label>
         Nombre
-        <input id="bonusName" name="name" placeholder="Ej: Prima junio" required />
+        <input id="bonusName" required />
       </label>
       <label>
-        Monto
-        <input id="bonusAmount" name="amount" type="number" min="1" required />
+        Valor prima
+        <input id="bonusAmount" type="number" min="1" required />
       </label>
       <label>
         Fecha de pago
-        <input id="bonusDate" name="date" type="date" />
+        <input id="bonusDate" type="date" />
       </label>
       <label>
         Descripción
-        <textarea id="bonusDescription" name="description" rows="2" placeholder="Detalles adicionales"></textarea>
+        <textarea id="bonusDescription" rows="2"></textarea>
       </label>
       <menu>
         <button type="button" id="btnBonusCancel">Cancelar</button>
@@ -96,7 +58,33 @@
     </form>
   </dialog>
 
+  <!-- Modal Gasto de una prima -->
+  <dialog id="expenseDialog">
+    <form id="expenseForm" method="dialog">
+      <h3>Gasto de prima</h3>
+      <label>
+        Nombre del gasto
+        <input id="expName" required />
+      </label>
+      <label>
+        Monto
+        <input id="expAmount" type="number" min="1" required />
+      </label>
+      <label>
+        Fecha
+        <input id="expDate" type="date" />
+      </label>
+      <label>
+        Descripción
+        <textarea id="expDescription" rows="2"></textarea>
+      </label>
+      <menu>
+        <button type="button" id="btnExpCancel">Cancelar</button>
+        <button type="submit" id="btnExpSave">Guardar</button>
+      </menu>
+    </form>
+  </dialog>
+
   <script src="app.js"></script>
 </body>
 </html>
-
