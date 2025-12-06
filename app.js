@@ -10,14 +10,13 @@ let monthNames = [
 ];
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
-let months = {}; 
+let months = {};
 let selectedBonusIdx = null;
-
-// Estructura: months["2025-06"] = { bonuses:[ { name, amount, date, description, expenses:[{...}], id } ] }
 
 function monthKey(m, y) {
   return `${y}-${(m+1).toString().padStart(2,"0")}`;
 }
+
 function getMonthObj() {
   const key = monthKey(currentMonth, currentYear);
   if (!months[key]) months[key] = { bonuses: [] };
@@ -39,6 +38,7 @@ monthSelect.onchange = () => {
   const [y,m] = monthSelect.value.split("-");
   currentYear = Number(y);
   currentMonth = Number(m)-1;
+  selectedBonusIdx = null;
   render();
 };
 
@@ -65,6 +65,7 @@ function openBonusDialog(bonus=null, idx=null) {
     document.getElementById("bonusDescription").value = bonus.description || "";
   }
   bonusDlg.showModal();
+  document.getElementById("bonusName").focus();
 }
 
 bonusForm.onsubmit = (e) => {
@@ -75,19 +76,30 @@ bonusForm.onsubmit = (e) => {
   const date = document.getElementById("bonusDate").value;
   const description = document.getElementById("bonusDescription").value.trim();
   const obj = getMonthObj();
-  const nuevo = {
-    id: crypto.randomUUID ? crypto.randomUUID() : Date.now()+Math.random(),
-    name, amount, date, description,
-    expenses: []  // gastos de esta prima
-  };
-  if (editBonusIdx != null) obj.bonuses[editBonusIdx] = { ...obj.bonuses[editBonusIdx], ...nuevo, expenses: obj.bonuses[editBonusIdx].expenses };
-  else obj.bonuses.push(nuevo);
+  
+  if (editBonusIdx != null) {
+    // editando prima existente, preservar gastos
+    obj.bonuses[editBonusIdx].name = name;
+    obj.bonuses[editBonusIdx].amount = amount;
+    obj.bonuses[editBonusIdx].date = date;
+    obj.bonuses[editBonusIdx].description = description;
+  } else {
+    // nueva prima
+    const nuevo = {
+      id: Date.now() + Math.random(),
+      name, amount, date, description,
+      expenses: []
+    };
+    obj.bonuses.push(nuevo);
+  }
+  
   editBonusIdx = null;
   bonusDlg.close("saved");
   render();
 };
 
 document.getElementById("btnBonusCancel").onclick = () => bonusDlg.close("canceled");
+
 bonusDlg.addEventListener("click", ev => {
   const r = bonusDlg.getBoundingClientRect();
   if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) {
@@ -95,61 +107,27 @@ bonusDlg.addEventListener("click", ev => {
   }
 });
 
-// ---------- gastos dentro de una prima ----------
-const expenseDlg = document.getElementById("expenseDialog");
-const expenseForm = document.getElementById("expenseForm");
-let currentBonusIdx = null;
-let editExpenseIdx = null;
-
-function openExpenseDialog(bonusIdx, expense=null, idx=null) {
-  currentBonusIdx = bonusIdx;
-  editExpenseIdx = idx;
-  expenseForm.reset();
-  if (expense) {
-    document.getElementById("expName").value = expense.name;
-    document.getElementById("expAmount").value = expense.amount;
-    document.getElementById("expDate").value = expense.date || "";
-    document.getElementById("expDescription").value = expense.description || "";
-  }
-  expenseDlg.showModal();
-}
-
-expenseForm.onsubmit = (e) => {
-  e.preventDefault();
-  if (!expenseForm.reportValidity()) return;
-  const name = document.getElementById("expName").value.trim();
-  const amount = Number(document.getElementById("expAmount").value);
-  const date = document.getElementById("expDate").value;
-  const description = document.getElementById("expDescription").value.trim();
+// ---------- editar y eliminar prima ----------
+window.editBonus = function(idx) {
   const obj = getMonthObj();
-  const bonus = obj.bonuses[currentBonusIdx];
-  const nuevo = { name, amount, date, description };
-  if (editExpenseIdx != null) bonus.expenses[editExpenseIdx] = nuevo;
-  else bonus.expenses.push(nuevo);
-  editExpenseIdx = null;
-  expenseDlg.close("saved");
-  document.getElementById("add-expense").onclick = () => {
-  if (selectedBonusIdx === null) return;
-  openExpenseDialog(selectedBonusIdx);
+  openBonusDialog(obj.bonuses[idx], idx);
 };
 
-  function render() {
-  renderBonuses();          // pinta tabla de primas
-  renderSelectedBonusExpenses(); // pinta gastos de la prima seleccionada
-  renderGraph();            // actualiza gráfico general
-}
-
-};
-
-document.getElementById("btnExpCancel").onclick = () => expenseDlg.close("canceled");
-expenseDlg.addEventListener("click", ev => {
-  const r = expenseDlg.getBoundingClientRect();
-  if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) {
-    expenseDlg.close("canceled");
+window.deleteBonus = function(idx) {
+  const obj = getMonthObj();
+  if (confirm("¿Eliminar esta prima y todos sus gastos?")) {
+    obj.bonuses.splice(idx,1);
+    if (selectedBonusIdx === idx) selectedBonusIdx = null;
+    render();
   }
-});
+};
 
-// ---------- render de primas + gastos ----------
+window.selectBonus = function(idx) {
+  selectedBonusIdx = idx;
+  render();
+};
+
+// ---------- render de primas en tabla ----------
 function renderBonuses() {
   const obj = getMonthObj();
   const tbody = document.getElementById("bonus-tbody");
@@ -179,17 +157,16 @@ function renderBonuses() {
 
   document.getElementById("bonus-total").textContent = fmtCOP.format(totalPrimas);
 
-  // si no hay selección pero hay primas, selecciona la primera
+  // auto-seleccionar primera prima si no hay selección
   if (obj.bonuses.length > 0 && (selectedBonusIdx === null || selectedBonusIdx >= obj.bonuses.length)) {
     selectedBonusIdx = 0;
   }
-  renderSelectedBonusExpenses();
+  if (obj.bonuses.length === 0) {
+    selectedBonusIdx = null;
+  }
 }
-window.selectBonus = function(idx) {
-  selectedBonusIdx = idx;
-  render();
-};
 
+// ---------- render gastos de prima seleccionada ----------
 function renderSelectedBonusExpenses() {
   const title = document.getElementById("selected-bonus-title");
   const btnAddExp = document.getElementById("add-expense");
@@ -204,7 +181,10 @@ function renderSelectedBonusExpenses() {
   }
 
   const b = obj.bonuses[selectedBonusIdx];
-  title.textContent = `Prima: ${b.name} (${fmtCOP.format(b.amount)})`;
+  const totalGastos = b.expenses.reduce((a,e)=>a+e.amount,0);
+  const saldo = b.amount - totalGastos;
+  
+  title.innerHTML = `Prima: <strong>${b.name}</strong> - Valor: ${fmtCOP.format(b.amount)} | Gastos: ${fmtCOP.format(totalGastos)} | <span style="color: ${saldo >= 0 ? '#16a085' : '#e74c3c'}">Saldo: ${fmtCOP.format(saldo)}</span>`;
   btnAddExp.disabled = false;
 
   b.expenses.forEach((e, i) => {
@@ -215,13 +195,82 @@ function renderSelectedBonusExpenses() {
       <td>${e.date || ""}</td>
       <td>${e.description || ""}</td>
       <td>
-        <button onclick="editExpense(${selectedBonusIdx},${i})">✏️</button>
-        <button onclick="deleteExpense(${selectedBonusIdx},${i})">🗑️</button>
+        <button onclick="editExpense(${i})">✏️</button>
+        <button onclick="deleteExpense(${i})">🗑️</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
+
+// ---------- gastos dentro de una prima ----------
+const expenseDlg = document.getElementById("expenseDialog");
+const expenseForm = document.getElementById("expenseForm");
+let editExpenseIdx = null;
+
+document.getElementById("add-expense").onclick = () => {
+  if (selectedBonusIdx === null) return;
+  openExpenseDialog();
+};
+
+function openExpenseDialog(expense=null, idx=null) {
+  editExpenseIdx = idx;
+  expenseForm.reset();
+  if (expense) {
+    document.getElementById("expName").value = expense.name;
+    document.getElementById("expAmount").value = expense.amount;
+    document.getElementById("expDate").value = expense.date || "";
+    document.getElementById("expDescription").value = expense.description || "";
+  }
+  expenseDlg.showModal();
+  document.getElementById("expName").focus();
+}
+
+expenseForm.onsubmit = (e) => {
+  e.preventDefault();
+  if (!expenseForm.reportValidity()) return;
+  const name = document.getElementById("expName").value.trim();
+  const amount = Number(document.getElementById("expAmount").value);
+  const date = document.getElementById("expDate").value;
+  const description = document.getElementById("expDescription").value.trim();
+  
+  const obj = getMonthObj();
+  const bonus = obj.bonuses[selectedBonusIdx];
+  const nuevo = { name, amount, date, description };
+  
+  if (editExpenseIdx != null) {
+    bonus.expenses[editExpenseIdx] = nuevo;
+  } else {
+    bonus.expenses.push(nuevo);
+  }
+  
+  editExpenseIdx = null;
+  expenseDlg.close("saved");
+  render();
+};
+
+document.getElementById("btnExpCancel").onclick = () => expenseDlg.close("canceled");
+
+expenseDlg.addEventListener("click", ev => {
+  const r = expenseDlg.getBoundingClientRect();
+  if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) {
+    expenseDlg.close("canceled");
+  }
+});
+
+window.editExpense = function(idx) {
+  const obj = getMonthObj();
+  const bonus = obj.bonuses[selectedBonusIdx];
+  openExpenseDialog(bonus.expenses[idx], idx);
+};
+
+window.deleteExpense = function(idx) {
+  const obj = getMonthObj();
+  if (confirm("¿Eliminar este gasto de la prima?")) {
+    obj.bonuses[selectedBonusIdx].expenses.splice(idx,1);
+    render();
+  }
+};
 
 // ---------- gráfico ----------
 let summaryChart;
@@ -251,6 +300,7 @@ function renderGraph() {
 function saveToStorage() {
   localStorage.setItem("controlPrimasGastos", JSON.stringify(months));
 }
+
 function loadFromStorage() {
   const data = localStorage.getItem("controlPrimasGastos");
   if (data) months = JSON.parse(data);
@@ -259,10 +309,10 @@ function loadFromStorage() {
 // ---------- render global ----------
 function render() {
   renderBonuses();
+  renderSelectedBonusExpenses();
   renderGraph();
 }
 
 // inicio
 loadFromStorage();
 render();
-
