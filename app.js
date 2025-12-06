@@ -11,6 +11,8 @@ let monthNames = [
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let months = {}; 
+let selectedBonusIdx = null;
+
 // Estructura: months["2025-06"] = { bonuses:[ { name, amount, date, description, expenses:[{...}], id } ] }
 
 function monthKey(m, y) {
@@ -126,7 +128,17 @@ expenseForm.onsubmit = (e) => {
   else bonus.expenses.push(nuevo);
   editExpenseIdx = null;
   expenseDlg.close("saved");
-  render();
+  document.getElementById("add-expense").onclick = () => {
+  if (selectedBonusIdx === null) return;
+  openExpenseDialog(selectedBonusIdx);
+};
+
+  function render() {
+  renderBonuses();          // pinta tabla de primas
+  renderSelectedBonusExpenses(); // pinta gastos de la prima seleccionada
+  renderGraph();            // actualiza gráfico general
+}
+
 };
 
 document.getElementById("btnExpCancel").onclick = () => expenseDlg.close("canceled");
@@ -140,8 +152,8 @@ expenseDlg.addEventListener("click", ev => {
 // ---------- render de primas + gastos ----------
 function renderBonuses() {
   const obj = getMonthObj();
-  const ul = document.getElementById("bonus-list");
-  ul.innerHTML = "";
+  const tbody = document.getElementById("bonus-tbody");
+  tbody.innerHTML = "";
   let totalPrimas = 0;
 
   obj.bonuses.forEach((b, idx) => {
@@ -149,64 +161,67 @@ function renderBonuses() {
     const saldo = b.amount - totalGastos;
     totalPrimas += b.amount;
 
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <div>
-        <strong>${b.name}</strong> - Prima: ${fmtCOP.format(b.amount)} 
-        | Gastos: ${fmtCOP.format(totalGastos)} 
-        | Saldo: ${fmtCOP.format(saldo)}
-        ${b.date ? " | Fecha: "+b.date : ""}
-        ${b.description ? " | "+b.description : ""}
-      </div>
-      <div class="gasto-actions">
-        <button onclick="editBonus(${idx})">Editar prima</button>
-        <button onclick="deleteBonus(${idx})">Eliminar prima</button>
-        <button onclick="openExpenseDialog(${idx})">Agregar gasto</button>
-      </div>
-      <ul class="sub-list">
-        ${b.expenses.map((e,i)=>`
-          <li>
-            ${e.name}: ${fmtCOP.format(e.amount)}
-            ${e.date ? " ("+e.date+")" : ""} ${e.description ? " - "+e.description : ""}
-            <span class="gasto-actions">
-              <button onclick="editExpense(${idx},${i})">✏️</button>
-              <button onclick="deleteExpense(${idx},${i})">🗑️</button>
-            </span>
-          </li>
-        `).join("")}
-      </ul>
+    const tr = document.createElement("tr");
+    if (idx === selectedBonusIdx) tr.classList.add("selected-row");
+    tr.innerHTML = `
+      <td>${b.name}</td>
+      <td>${fmtCOP.format(b.amount)}</td>
+      <td>${fmtCOP.format(totalGastos)}</td>
+      <td>${fmtCOP.format(saldo)}</td>
+      <td>
+        <button onclick="selectBonus(${idx})">Ver</button>
+        <button onclick="editBonus(${idx})">Editar</button>
+        <button onclick="deleteBonus(${idx})">Eliminar</button>
+      </td>
     `;
-    ul.appendChild(li);
+    tbody.appendChild(tr);
   });
 
   document.getElementById("bonus-total").textContent = fmtCOP.format(totalPrimas);
+
+  // si no hay selección pero hay primas, selecciona la primera
+  if (obj.bonuses.length > 0 && (selectedBonusIdx === null || selectedBonusIdx >= obj.bonuses.length)) {
+    selectedBonusIdx = 0;
+  }
+  renderSelectedBonusExpenses();
 }
-
-window.editBonus = idx => {
-  const obj = getMonthObj();
-  openBonusDialog(obj.bonuses[idx], idx);
+window.selectBonus = function(idx) {
+  selectedBonusIdx = idx;
+  render();
 };
 
-window.deleteBonus = idx => {
+function renderSelectedBonusExpenses() {
+  const title = document.getElementById("selected-bonus-title");
+  const btnAddExp = document.getElementById("add-expense");
+  const tbody = document.getElementById("expense-tbody");
+  tbody.innerHTML = "";
+
   const obj = getMonthObj();
-  if (confirm("¿Eliminar esta prima y todos sus gastos?")) {
-    obj.bonuses.splice(idx,1);
-    render();
+  if (selectedBonusIdx === null || !obj.bonuses[selectedBonusIdx]) {
+    title.textContent = "Ninguna prima seleccionada";
+    btnAddExp.disabled = true;
+    return;
   }
-};
 
-window.editExpense = (bIdx, eIdx) => {
-  const obj = getMonthObj();
-  openExpenseDialog(bIdx, obj.bonuses[bIdx].expenses[eIdx], eIdx);
-};
+  const b = obj.bonuses[selectedBonusIdx];
+  title.textContent = `Prima: ${b.name} (${fmtCOP.format(b.amount)})`;
+  btnAddExp.disabled = false;
 
-window.deleteExpense = (bIdx, eIdx) => {
-  const obj = getMonthObj();
-  if (confirm("¿Eliminar este gasto de la prima?")) {
-    obj.bonuses[bIdx].expenses.splice(eIdx,1);
-    render();
-  }
-};
+  b.expenses.forEach((e, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${e.name}</td>
+      <td>${fmtCOP.format(e.amount)}</td>
+      <td>${e.date || ""}</td>
+      <td>${e.description || ""}</td>
+      <td>
+        <button onclick="editExpense(${selectedBonusIdx},${i})">✏️</button>
+        <button onclick="deleteExpense(${selectedBonusIdx},${i})">🗑️</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
 
 // ---------- gráfico ----------
 let summaryChart;
@@ -250,3 +265,4 @@ function render() {
 // inicio
 loadFromStorage();
 render();
+
