@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Control de Primas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Control de Primas</h1>
+    <div>
+      <label for="month-select">Mes:</label>
+      <select id="month-select"></select>
+      <button id="save-month">Guardar Mes</button>
+    </div>
+    <nav>
+      <button id="tab-actual" class="tab active">Mes Actual</button>
+      <button id="tab-historial" class="tab">Historial</button>
+    </nav>
+  </header>
+
+  <main id="tab-content-actual" class="visible">
+    <section class="card">
+      <h2>Ingreso base mensual</h2>
+      <input id="base-income-input" type="number" min="0" placeholder="Ingreso base COP" />
+      <button id="save-base-income">Guardar</button>
+      <span id="base-income-display"></span>
+    </section>
+
+    <section class="card">
+      <h2>Primas del mes</h2>
+      <ul id="bonus-list"></ul>
+      <button id="add-bonus">Agregar Prima</button>
+      <span id="bonus-total"></span>
+    </section>
+
+    <section class="card">
+      <h2>Resumen del mes</h2>
+      <p>Total primas: <span id="summary-bonus"></span></p>
+      <p>Ingreso total (base + primas): <span id="summary-total"></span></p>
+    </section>
+
+    <section class="card">
+      <h2>Resumen Gráfico</h2>
+      nvas id="summaryChart" width="360"" height="360"></canvas>
+    </section>
+  </main>
+
+  <main id="tab-content-historial" class="hidden">
+    <section class="card">
+      <h2>Historial de Primas</h2>
+      <div style="overflow-x:auto;">
+        <table id="history-table">
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th>Ingreso base</th>
+              <th>Total primas</th>
+              <th>Ingreso total</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <button id="download-csv">Descargar Historial CSV</button>
+    </section>
+  </main>
+
+  <!-- Modal Prima -->
+  <dialog id="bonusDialog">
+    <form id="bonusForm" method="dialog">
+      <h3>Prima</h3>
+      <label>
+        Nombre
+        <input id="bonusName" name="name" placeholder="Ej: Prima junio" required />
+      </label>
+      <label>
+        Monto
+        <input id="bonusAmount" name="amount" type="number" min="1" required />
+      </label>
+      <label>
+        Fecha de pago
+        <input id="bonusDate" name="date" type="date" />
+      </label>
+      <label>
+        Descripción
+        <textarea id="bonusDescription" name="description" rows="2" placeholder="Detalles adicionales"></textarea>
+      </label>
+      <menu>
+        <button type="button" id="btnBonusCancel">Cancelar</button>
+        <button type="submit" id="btnBonusSave">Guardar</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
