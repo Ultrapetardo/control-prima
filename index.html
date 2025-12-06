@@ -21,7 +21,49 @@
     <section class="card">
       <h2>Primas del mes</h2>
       <button id="add-bonus">Agregar Prima</button>
-      <ul id="bonus-list"></ul>
+      <section class="card">
+  <h2>Primas del mes</h2>
+  <button id="add-bonus">Agregar Prima</button>
+
+  <div style="overflow-x:auto;">
+    <table id="bonus-table">
+      <thead>
+        <tr>
+          <th>Prima</th>
+          <th>Valor</th>
+          <th>Gastos</th>
+          <th>Saldo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="bonus-tbody"></tbody>
+    </table>
+  </div>
+
+  <p>Total primas del mes: <span id="bonus-total"></span></p>
+</section>
+
+<!-- Debajo de la tabla, lista de gastos de la prima seleccionada -->
+<section class="card">
+  <h2>Gastos de la prima seleccionada</h2>
+  <p id="selected-bonus-title">Ninguna prima seleccionada</p>
+  <button id="add-expense" disabled>Agregar gasto</button>
+  <div style="overflow-x:auto;">
+    <table id="expense-table">
+      <thead>
+        <tr>
+          <th>Gasto</th>
+          <th>Monto</th>
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="expense-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
       <p>Total primas: <span id="bonus-total"></span></p>
     </section>
 
@@ -88,3 +130,4 @@
   <script src="app.js"></script>
 </body>
 </html>
+
